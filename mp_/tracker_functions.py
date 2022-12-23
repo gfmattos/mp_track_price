@@ -492,6 +492,7 @@ def store_data(drugstore, names, prices, eans, df=pd.DataFrame({})):
     products_dict = {}
 
     products_dict['drugstore'] = [drugstore for x in range(0, len(names))]
+    products_dict['date'] = [date.today() for x in range(0, len(names))]
     products_dict['products_name'] = names
     products_dict['price'] = prices
     products_dict['EAN'] = eans
