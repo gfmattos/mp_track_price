@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException, ElementClickInterceptedException
 from bs4 import BeautifulSoup
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 import time
 import re
 
@@ -20,6 +20,7 @@ drugstores = {
     'DVN':'https://www.drogariavenancio.com.br/sallve',
     'ECM':'https://www.epocacosmeticos.com.br/sallve#1'
             }
+
 
 def initialize_browser(drugstore, headless=True, logless=True):
 
@@ -238,7 +239,7 @@ def exec_webscraping(browser, drugstore, attempts, menu_info, products, paginati
                         index = product
 
                         if drugstores['DSL'] not in browser.current_url:
-                            browser.get(f'https://www.drogaraia.com.br/search?w=sallve&p={pag}')
+                            browser.get(f'https://www.drogasil.com.br/search?w=sallve&p={pag}')
                             time.sleep(2)
                             browser.refresh()
 
@@ -374,7 +375,7 @@ def exec_webscraping(browser, drugstore, attempts, menu_info, products, paginati
 
     elif drugstore == 'DVN':
         
-        print(f'Attempt: {i+1} - {drugstore}')
+        print(f'Attempt: 1 - {drugstore}')
 
         try:
             while browser.find_element(By.CLASS_NAME, 'sr_loadMore'):
@@ -406,8 +407,6 @@ def exec_webscraping(browser, drugstore, attempts, menu_info, products, paginati
         eans_list = [x.find('li').text for x in eans_panel]
 
         browser.quit()
-
-        #pagination = 0
 
         return names_list, prices_list, eans_list
     
@@ -471,7 +470,10 @@ def exec_webscraping(browser, drugstore, attempts, menu_info, products, paginati
                     break
                 
             if pagination == 1:
-                browser.find_elements(By.CLASS_NAME, 'next')[1].click()
+
+                next_button = browser.find_elements(By.CLASS_NAME, 'next')[1]
+                browser.execute_script('arguments[0].click()', next_button)
+
                 pag += 1
 
                 time.sleep(10)
@@ -503,8 +505,16 @@ def store_data(drugstore, names, prices, eans, df=pd.DataFrame({})):
 
 
 def track_price(drugstores, headless=True, logless=True, attempts=100):
+    
+    start_time = time.time()
+
+    print(f'Starting program at {datetime.now()}')
 
     for i,drugstore in enumerate(drugstores):
+
+        start_time_d = time.time()
+
+        print(f'Starting drugstore webscraping at {datetime.now()}')
 
         browser = initialize_browser(drugstore, headless, logless)
         print(f'Initialized browser for {drugstore}...')
@@ -522,7 +532,17 @@ def track_price(drugstores, headless=True, logless=True, attempts=100):
         else:
             df = store_data(drugstore, names, prices, eans, df)
             print(f'Data have been stored successfully for {drugstore}, concatenating with previous data...')
-        
+
+        end_time_d = time.time()
+
+        execution_time_d = (end_time_d-start_time_d)/60
+
+        print(f'Execution time for {drugstore}: {execution_time_d:.2f} minutes')
     
-    df.to_csv(f'tracked_prices_{date.today()}.csv', index=False, encoding='utf-8-sig') 
+    end_time = time.time()
+
+    execution_time = (end_time-start_time)/60   
+    
+    df.to_csv(f'tracked_prices_{date.today()}.csv', index=False, encoding='utf-8-sig')
     print('The data has been exported successfully in a csv file!')
+    print(f'Total execution time: {execution_time:.2f} minutes')
